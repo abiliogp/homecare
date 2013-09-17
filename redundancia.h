@@ -4,4 +4,3 @@ ref class redundancia
 public:
 	redundancia(void);
 };
-
