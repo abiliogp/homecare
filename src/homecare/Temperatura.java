@@ -4,7 +4,7 @@ public class Temperatura extends Sensor {
 
 	@Override
 	public void receive() {
-		// TODO Auto-generated method stub
+		this.dado = new Dado(19.0, "c");
 	}
 
 	private void dadosArqui(){

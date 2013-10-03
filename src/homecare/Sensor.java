@@ -5,6 +5,7 @@ public abstract class Sensor {
 	protected Dado dado;
 	
 	public Dado getDado(){
+		receive();
 		return dado;
 	}
 	
@@ -12,7 +13,7 @@ public abstract class Sensor {
 	 * Dados coletados...
 	 * criar atributos para os dados
 	 */
-	public abstract void receive();
+	protected abstract void receive();
 	
 	/*
 	 * Envia dados para o HomeCare
