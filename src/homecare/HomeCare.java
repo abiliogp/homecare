@@ -6,7 +6,7 @@ public abstract class HomeCare {
 
 	protected Paciente paciente;
 	
-	protected RequesicaoDados reqDados;
+	protected Sensor reqDados;
 	protected GerenciadorRedundancia genReduncancia;
 	
 	protected void lerSensores(){

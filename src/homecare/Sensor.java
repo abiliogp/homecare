@@ -1,6 +1,6 @@
 package homecare;
 
-public class RequesicaoDados {
+public class Sensor {
 
 	/*
 	 * Dados coletados...
