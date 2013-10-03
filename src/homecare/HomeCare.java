@@ -2,24 +2,20 @@ package homecare;
 
 import java.util.ArrayList;
 
-public class HomeCare {
+public abstract class HomeCare {
 
-	private Paciente paciente;
+	protected Paciente paciente;
 	
-	private RequesicaoDados reqDados;
-	private GerenciadorRedundancia genReduncancia;
+	protected RequesicaoDados reqDados;
+	protected GerenciadorRedundancia genReduncancia;
 	
-	private void lerSensores(){
+	protected void lerSensores(){
 		
 	}
 	
-	private void initRedundancia(){
+	protected void initRedundancia(){
 		
 	}
 	
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
-	}
 
 }

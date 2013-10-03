@@ -6,15 +6,10 @@ public class Paciente {
 	private String genero;
 	private String dataNasc;
 	
-	private Medico medico;
 	
 	/*
 	 * get and set
 	 */
-	public Medico getMedico(){
-		return this.medico;
-	}
-
 	public String getNome() {
 		return nome;
 	}
