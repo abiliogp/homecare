@@ -6,8 +6,8 @@ public abstract class HomeCare {
 
 	protected Paciente paciente;
 	
-	protected Sensor reqDados;
-	protected GerenciadorRedundancia genReduncancia;
+	protected ArrayList<Sensor> sensores;
+	
 	
 	protected void lerSensores(){
 		

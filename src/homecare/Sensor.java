@@ -1,17 +1,23 @@
 package homecare;
 
-public class Sensor {
+public abstract class Sensor {
 
+	protected Dado dado;
+	
+	public Dado getDado(){
+		return dado;
+	}
+	
 	/*
 	 * Dados coletados...
 	 * criar atributos para os dados
 	 */
+	public abstract void receive();
 	
-	public void receive(){
-		
-	}
-	
-	public void send(){
+	/*
+	 * Envia dados para o HomeCare
+	 */
+	public void send() {
 		
 	}
 }
