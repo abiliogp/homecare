@@ -29,7 +29,7 @@ public class httpServer {
 	}
 	
 	/*
-	 * Responde o cliente com as informações disponíveis
+	 * Responde o cliente com as informaï¿½ï¿½es disponï¿½veis
 	 */
 	static class HandlerHttp implements HttpHandler {
         public void handle(HttpExchange t) throws IOException {
