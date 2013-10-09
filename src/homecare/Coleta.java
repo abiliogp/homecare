@@ -32,9 +32,6 @@ public class Coleta {
 				waitForConnection();
 				getStreams();
 				processConnection();
-			} catch (EOFException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -92,14 +89,14 @@ public class Coleta {
 			connection.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+		} 
 	}
 	
 	
 	public static void main(String[] args) throws UnknownHostException, IOException{
 		Coleta coleta = new Coleta();
-		
-		Socket client = new Socket(InetAddress.getByName("127.0.0.1"), 12345);
 		coleta.getRedundancia();
+		Socket client = new Socket(InetAddress.getByName("127.0.0.1"), 12345);
+		
 	}
 }
