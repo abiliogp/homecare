@@ -20,10 +20,8 @@ public class Coleta {
 	private ArrayList<PrintStream> coletas;
 
 	private ServerSocket server;
+	private Socket client;
 	
-
-	private InputStream input;
-	private OutputStream output;
 	private int counter = 1;
 
 	public Coleta(int porta) throws IOException {
@@ -59,8 +57,7 @@ public class Coleta {
 	       this.coletas.add(ps);
 		
 		ClientConnection clientConnection = new ClientConnection(client.getInputStream());
-		new Thread(clientConnection).start();
-		
+		new Thread(clientConnection).start();		
 	}
 
 	/*
@@ -75,7 +72,12 @@ public class Coleta {
 		}
 
 		public void run() {
-			broadCast();
+			try {
+				broadCast();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			Scanner s = new Scanner(this.input);
 			while (s.hasNextLine()) {
 				//recebe informações dos outros clientes
@@ -88,23 +90,26 @@ public class Coleta {
 	/*
 	 * Envia as informações do servidor para todos os clientes
 	 */
-	public void broadCast() {
+	public void broadCast() throws IOException {
 		 for (PrintStream coleta : this.coletas) {
 		       //home.println(msg);
-			 coleta.println("oi " +  this.server.getInetAddress().getHostName());
+			 coleta.println("oi " +  this.server.getLocalPort());	
 		 }
-
+		 Scanner s = new Scanner(client.getInputStream());
+	     while (s.hasNextLine()) {
+	       System.out.println(s.nextLine());
+	     }	
+		
 	}
 	
 	
 
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
-		Coleta coleta = new Coleta(12345);
-		for(int i = 0; i<1; i++){
-			Socket cliente = new Socket("127.0.0.1", 12345);
-			
-		}
+		Coleta coleta = new Coleta(Integer.parseInt(args[0]));
+		coleta.client = new Socket("127.0.0.1", Integer.parseInt(args[1]));
 		coleta.runServer();
+		
+		
 	}
 }
