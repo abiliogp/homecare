@@ -49,14 +49,14 @@ public class Coleta {
 
 	
 	private void waitForConnection() throws IOException {
-		Socket client = server.accept();
+		Socket connection = server.accept();
 		System.out.println("Connection " + counter + " received from: "
-				+ client.getInetAddress().getHostName());
+				+ connection.getInetAddress().getHostName());
 		
-		PrintStream ps = new PrintStream(client.getOutputStream());
+		PrintStream ps = new PrintStream(connection.getOutputStream());
 	       this.coletas.add(ps);
 		
-		ClientConnection clientConnection = new ClientConnection(client.getInputStream());
+		ClientConnection clientConnection = new ClientConnection(connection.getInputStream());
 		new Thread(clientConnection).start();		
 	}
 
@@ -75,15 +75,8 @@ public class Coleta {
 			try {
 				broadCast();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			Scanner s = new Scanner(this.input);
-			while (s.hasNextLine()) {
-				//recebe informações dos outros clientes
-				System.out.println(s);
-			}
-			s.close();
 		}
 	}
 
@@ -92,24 +85,23 @@ public class Coleta {
 	 */
 	public void broadCast() throws IOException {
 		 for (PrintStream coleta : this.coletas) {
-		       //home.println(msg);
-			 coleta.println("oi " +  this.server.getLocalPort());	
+		     coleta.println("oi meu server é " + this.server.getLocalPort()
+		    		 + " sou o cliente " + coleta.toString() );	
 		 }
 		 Scanner s = new Scanner(client.getInputStream());
 	     while (s.hasNextLine()) {
-	       System.out.println(s.nextLine());
+	       System.out.println("Client: " + s.nextLine());
 	     }	
-		
+	     s.close();
 	}
 	
 	
-
+	//myport serverport
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
 		Coleta coleta = new Coleta(Integer.parseInt(args[0]));
 		coleta.client = new Socket("127.0.0.1", Integer.parseInt(args[1]));
 		coleta.runServer();
-		
-		
 	}
+	
 }
