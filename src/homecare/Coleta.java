@@ -17,17 +17,17 @@ import java.util.Scanner;
 
 public class Coleta {
 
-	private ArrayList<PrintStream> coletas;
+	private ArrayList<Socket> coletas;
 
 	private ServerSocket server;
 	private Socket client;
-	
+
 	private int counter = 1;
 
 	public Coleta(int porta) throws IOException {
 		server = new ServerSocket(porta);
-		coletas = new ArrayList<PrintStream>();
-		
+		coletas = new ArrayList<Socket>();
+
 	}
 
 	public void getDadosHomeCare() {
@@ -47,17 +47,17 @@ public class Coleta {
 		}
 	}
 
-	
 	private void waitForConnection() throws IOException {
 		Socket connection = server.accept();
 		System.out.println("Connection " + counter + " received from: "
 				+ connection.getInetAddress().getHostName());
-		
-		PrintStream ps = new PrintStream(connection.getOutputStream());
-	       this.coletas.add(ps);
-		
-		ClientConnection clientConnection = new ClientConnection(connection.getInputStream());
-		new Thread(clientConnection).start();		
+
+		// PrintStream ps = new PrintStream(connection.getOutputStream());
+		this.coletas.add(connection);
+
+		ClientConnection clientConnection = new ClientConnection(
+				connection.getInputStream());
+		new Thread(clientConnection).start();
 	}
 
 	/*
@@ -74,6 +74,7 @@ public class Coleta {
 		public void run() {
 			try {
 				broadCast();
+				receiver();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -84,24 +85,30 @@ public class Coleta {
 	 * Envia as informações do servidor para todos os clientes
 	 */
 	public void broadCast() throws IOException {
-		 for (PrintStream coleta : this.coletas) {
-		     coleta.println("oi meu server é " + this.server.getLocalPort()
-		    		 + " sou o cliente " + coleta.toString() );	
-		 }
-		 Scanner s = new Scanner(client.getInputStream());
-	     while (s.hasNextLine()) {
-	       System.out.println("Client: " + s.nextLine());
-	     }	
-	     s.close();
+		for (Socket coleta : this.coletas) {
+			PrintStream ps = new PrintStream(coleta.getOutputStream());
+			ps.println(coleta.getRemoteSocketAddress());
+		}
+
 	}
-	
-	
-	//myport serverport
+
+	/*
+	 * Recebe informações do cliente conectado
+	 */
+	private void receiver() throws IOException {
+		Scanner s = new Scanner(client.getInputStream());
+		while (s.hasNextLine()) {
+			System.out.println("Client: " + s.nextLine());
+		}
+		s.close();
+	}
+
+	// myport serverport
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
 		Coleta coleta = new Coleta(Integer.parseInt(args[0]));
 		coleta.client = new Socket("127.0.0.1", Integer.parseInt(args[1]));
 		coleta.runServer();
 	}
-	
+
 }
