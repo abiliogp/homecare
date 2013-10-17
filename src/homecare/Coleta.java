@@ -17,17 +17,19 @@ import java.util.Scanner;
 
 public class Coleta {
 
-	private ArrayList<Socket> coletas;
+	private ArrayList<Socket> myClients;
+	private ArrayList<Socket> myServers;
 
+	private int myPort;
 	private ServerSocket server;
-	private Socket client;
 
 	private int counter = 1;
 
-	public Coleta(int porta) throws IOException {
-		server = new ServerSocket(porta);
-		coletas = new ArrayList<Socket>();
-
+	public Coleta(int myPort) throws IOException {
+		this.myPort = myPort;
+		server = new ServerSocket(myPort);
+		myClients = new ArrayList<Socket>();
+		myServers = new ArrayList<Socket>();
 	}
 
 	public void getDadosHomeCare() {
@@ -35,11 +37,11 @@ public class Coleta {
 	}
 
 	public void runServer() {
+		receiverUpdate();
 		while (true) {
 			try {
 				waitForConnection();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} finally {
 				++counter;
@@ -50,31 +52,23 @@ public class Coleta {
 	private void waitForConnection() throws IOException {
 		Socket connection = server.accept();
 		System.out.println("Connection " + counter + " received from: "
-				+ connection.getInetAddress().getHostName());
+				+ connection.getRemoteSocketAddress());
 
-		// PrintStream ps = new PrintStream(connection.getOutputStream());
-		this.coletas.add(connection);
+		this.myClients.add(connection);
 
-		ClientConnection clientConnection = new ClientConnection(
-				connection.getInputStream());
+		ClientConnection clientConnection = new ClientConnection();
 		new Thread(clientConnection).start();
 	}
 
+	
+	
 	/*
 	 * Suporte à vários clientes conectados ao servidor
 	 */
-	private class ClientConnection implements Runnable {
-
-		private InputStream input;
-
-		public ClientConnection(InputStream input) {
-			this.input = input;
-		}
-
+	private class ClientConnection implements Runnable {		
 		public void run() {
 			try {
 				broadCast();
-				receiver();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -85,29 +79,54 @@ public class Coleta {
 	 * Envia as informações do servidor para todos os clientes
 	 */
 	public void broadCast() throws IOException {
-		for (Socket coleta : this.coletas) {
+		for (Socket coleta : this.myClients) {
 			PrintStream ps = new PrintStream(coleta.getOutputStream());
-			ps.println(coleta.getRemoteSocketAddress());
+			ps.println("<cs: " + coleta.getRemoteSocketAddress() + " port: " + this.myPort +">");
 		}
-
 	}
 
+	
+	
+	private void receiverUpdate(){
+		Receiver receiverConnection = new Receiver();
+		new Thread(receiverConnection).start();
+	}
+	
+	private class Receiver implements Runnable {
+		public void run() {
+			try {
+				receiverBroadcast();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	/*
 	 * Recebe informações do cliente conectado
 	 */
-	private void receiver() throws IOException {
-		Scanner s = new Scanner(client.getInputStream());
-		while (s.hasNextLine()) {
-			System.out.println("Client: " + s.nextLine());
+	private void receiverBroadcast() throws IOException {
+		for(Socket connection : this.myServers){
+			Scanner s = new Scanner(connection.getInputStream());
+			while (s.hasNextLine()) {
+				System.out.println("Client: " + s.nextLine());
+			}
+			s.close();
 		}
-		s.close();
+		System.out.println("receiver");
 	}
+	
+	
+	
 
 	// myport serverport
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
 		Coleta coleta = new Coleta(Integer.parseInt(args[0]));
-		coleta.client = new Socket("127.0.0.1", Integer.parseInt(args[1]));
+		
+		Socket client = new Socket("127.0.0.1", Integer.parseInt(args[1]));
+		coleta.myServers.add(client);
+		
 		coleta.runServer();
 	}
 
