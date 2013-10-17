@@ -24,6 +24,7 @@ public class Coleta {
 	private ServerSocket server;
 
 	private int counter = 1;
+	Thread senderThread;
 
 	public Coleta(int myPort) throws IOException {
 		this.myPort = myPort;
@@ -38,6 +39,7 @@ public class Coleta {
 
 	public void runServer() {
 		receiverUpdate();
+		senderUpdate();
 		while (true) {
 			try {
 				waitForConnection();
@@ -86,6 +88,9 @@ public class Coleta {
 		}
 	}
 
+	/*
+	 * envia ip e porta para clientes
+	 */
 	public void clientsUpdate() throws IOException {
 		for (Socket coleta : this.myClients) {
 			for (Socket client : this.myClients) {
@@ -94,6 +99,7 @@ public class Coleta {
 			}
 		}
 	}
+	
 	
 	/*
 	 * Recebe informações dos servidores 
@@ -124,11 +130,41 @@ public class Coleta {
 			}
 			s.close();
 		}
-		System.out.println("receiver");
 	}
 	
 	
+	/*
+	 * 
+	 */
+	private void senderUpdate(){
+		Sender sender = new Sender();
+		senderThread = new Thread(sender,"sender");
+		senderThread.start();
+	}
 	
+	private class Sender implements Runnable{
+		public void run(){
+			Thread myThread = Thread.currentThread();
+			while(myThread == senderThread)	{
+				try {
+					senderDatas();
+					Thread.sleep(1000);
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	private void senderDatas() throws IOException{
+		for (Socket coleta : this.myClients) {
+			PrintStream ps = new PrintStream(coleta.getOutputStream());
+			ps.println("<temp: >");
+		}
+	} 
 
 	// myport serverport
 	public static void main(String[] args) throws UnknownHostException,
