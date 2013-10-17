@@ -69,6 +69,7 @@ public class Coleta {
 		public void run() {
 			try {
 				broadCast();
+				clientsUpdate();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -85,8 +86,18 @@ public class Coleta {
 		}
 	}
 
+	public void clientsUpdate() throws IOException {
+		for (Socket coleta : this.myClients) {
+			for (Socket client : this.myClients) {
+				PrintStream ps = new PrintStream(client.getOutputStream());
+				ps.println("<cs myclient: " + coleta.getRemoteSocketAddress() + " port: " + this.myPort +">");
+			}
+		}
+	}
 	
-	
+	/*
+	 * Recebe informações dos servidores 
+	 */
 	private void receiverUpdate(){
 		Receiver receiverConnection = new Receiver();
 		new Thread(receiverConnection).start();
