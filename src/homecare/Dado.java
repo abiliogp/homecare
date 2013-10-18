@@ -1,26 +1,26 @@
 package homecare;
 
-public class Dado {
+public class Dado implements Serializable{  
 
-	private double dado;
-	private String unidadeMedida;
+	private String dado;
+	private String tipo;
 	
-	public Dado (double dado, String unidadeMedida){
+	public Dado (String tipo, String dado){
 		this.dado = dado;
-		this.unidadeMedida = unidadeMedida;
+		this.tipo = tipo;
 	}
 	
-	public double getDados() {
+	public String getDados() {
 		return dado;
 	}
-	public void setDados(double dado) {
+	public void setDados(String dado) {
 		this.dado = dado;
 	}
 	public String getUnidadeMedida() {
-		return unidadeMedida;
+		return tipo;
 	}
 	public void setUnidadeMedida(String unidadeMedida) {
-		this.unidadeMedida = unidadeMedida;
+		this.tipo = unidadeMedida;
 	}
 	
 	
