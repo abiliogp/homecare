@@ -1,5 +1,7 @@
 package homecare;
 
+import java.io.Serializable;
+
 public class Dado implements Serializable{  
 
 	private String dado;
