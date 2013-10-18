@@ -15,32 +15,38 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.sql.ClientInfoStatus;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Scanner;
 import java.util.TreeMap;
+import java.sql.Timestamp;
+import java.util.Date;
 
 public class Coleta {
 
 	private ArrayList<Socket> myClients;
 	private ArrayList<Socket> myServers;
 
-	private int myPort;
+	private int myPort, defaultPort;
+	private String myIp;
+	
 	private ServerSocket server;
 
 	private int counter = 1;
 	private Thread senderThread;
 
-	private TreeMap<String, ArrayList<Dado>> datas;
+	private TreeMap<String, ArrayList<Dado>> trieDatas;
 
 	private enum Msg {
 		cser, csmy, temp, pres, card;
 	}
 
-	public Coleta(int myPort) throws IOException {
+	public Coleta(String myIp, int myPort) throws IOException {
 		this.myPort = myPort;
+		this.myIp = myIp;
 		server = new ServerSocket(myPort);
 		myClients = new ArrayList<Socket>();
 		myServers = new ArrayList<Socket>();
-		datas = new TreeMap<String, ArrayList<Dado>>();
+		trieDatas = new TreeMap<String, ArrayList<Dado>>();
 	}
 
 	public void getDadosHomeCare() {
@@ -132,13 +138,14 @@ public class Coleta {
 	 * Recebe informações do cliente conectado
 	 */
 	private void receiverBroadcast() throws IOException {
-		String str, ip, st, data;
+		String str, ip, st, data, time;
 		for (Socket connection : this.myServers) {
 			Scanner s = new Scanner(connection.getInputStream());
 			while (s.hasNextLine()) {
 				str = s.nextLine();
 				ip = manipulate(str, "ip", "<", ">");
 				st = manipulate(str, "st", ":", "<");
+				System.out.println(str);
 				switch (Msg.valueOf(st)) {
 				case cser:
 					break;
@@ -147,7 +154,8 @@ public class Coleta {
 					break;
 				default:
 					data = manipulate(str, st, "<", ">");
-					saveData(ip, st, data);
+					time = manipulate(str, "time", "<", ">");
+					saveData(ip, st, data, time);
 					break;
 				}
 			}
@@ -158,23 +166,25 @@ public class Coleta {
 	/*
 	 * faz conexão com novo cliente abrir conexao com o novo cliente
 	 */
-	private void updateClientList(String ip) {
-
+	private void updateClientList(String ip) throws UnknownHostException, IOException {
+		if(!trieDatas.containsKey(ip) && !ip.equals(this.myIp)){
+			Socket client = new Socket(ip, this.defaultPort);
+			this.myServers.add(client);
+		}
 	}
 
 	/*
 	 * salvar dados
 	 */
-	private void saveData(String ip, String st, String data) {
+	private void saveData(String ip, String st, String data, String time) {
 		ArrayList<Dado> dataColeta;
-		if (!datas.containsKey(ip)) {
+		if (!trieDatas.containsKey(ip)) {
 			dataColeta = new ArrayList<Dado>();
-			dataColeta.add(new Dado(st, data));
-			datas.put(ip, dataColeta);
+			dataColeta.add(new Dado(st, data, time));
+			trieDatas.put(ip, dataColeta);
 		} else {
-			dataColeta = datas.get(ip);
-			dataColeta.add(new Dado(st, data));
-			System.out.println(dataColeta.size());
+			dataColeta = trieDatas.get(ip);
+			dataColeta.add(new Dado(st, data, time));
 			if(dataColeta.size() > 1000){
 				System.out.println("Save to file " + dataColeta.size());
 				saveToFile();
@@ -190,7 +200,7 @@ public class Coleta {
 					"homecare.log",true);
 			ObjectOutputStream objectOutput = new ObjectOutputStream(
 					new BufferedOutputStream(fileOutput));
-			objectOutput.writeObject(datas);
+			objectOutput.writeObject(trieDatas);
 			objectOutput.close();
 		} catch (IOException e )  {
 			System.out.println(e.toString());
@@ -216,7 +226,6 @@ public class Coleta {
 				} catch (IOException e) {
 					e.printStackTrace();
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -228,11 +237,14 @@ public class Coleta {
 		for (Socket coleta : this.myClients) {
 			PrintStream ps = new PrintStream(coleta.getOutputStream());
 			ps.println("ip<" + coleta.getInetAddress().getHostAddress()
-					+ ">st:temp<" + 10 + ">");
+					+ ">st:temp<" + 10 + ">"
+					+ "time<" + (new Timestamp(new Date().getTime())).toString() + ">");
 			ps.println("ip<" + coleta.getInetAddress().getHostAddress()
-					+ ">st:pres<" + 10 + ">");
+					+ ">st:pres<" + 11 + ">"
+					+ "time<" + (new Timestamp(new Date().getTime())).toString() + ">");
 			ps.println("ip<" + coleta.getInetAddress().getHostAddress()
-					+ ">st:card<" + i++ + ">");
+					+ ">st:card<" + i++ + ">"
+					+ "time<" + (new Timestamp(new Date().getTime())).toString() + ">");
 		}
 	}
 
@@ -249,12 +261,14 @@ public class Coleta {
 	// myport serverport
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
-		Coleta coleta = new Coleta(Integer.parseInt(args[0]));
+		Coleta coleta = new Coleta("127.0.0.1",12345);
 
 		// tomar por padrao a mesma porta dae só se preocupa com o IP
-		Socket client = new Socket("127.0.0.1", Integer.parseInt(args[1]));
+		
+		Socket client = new Socket("127.0.0.1", 12345);
 		coleta.myServers.add(client);
 
+		
 		coleta.runServer();
 	}
 
