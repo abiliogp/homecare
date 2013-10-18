@@ -185,7 +185,7 @@ public class Coleta {
 		} else {
 			dataColeta = trieDatas.get(ip);
 			dataColeta.add(new Dado(st, data, time));
-			if(dataColeta.size() > 1000){
+			if(dataColeta.size() > 10){
 				System.out.println("Save to file " + dataColeta.size());
 				saveToFile();
 				dataColeta.clear();

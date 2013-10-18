@@ -1,5 +1,6 @@
 .classpath
 .project
+homecare.log
 .project/
 .settings/
 bin/*
