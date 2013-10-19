@@ -2,12 +2,12 @@ package homecare;
 
 import java.util.ArrayList;
 
-public abstract class HomeCare {
+public class HomeCare {
 
-	protected Paciente paciente;
+	private Paciente paciente;
 	
-	protected ArrayList<Sensor> sensores = new ArrayList<Sensor>();
-	protected ArrayList<Dado> dadosLidos = new ArrayList<Dado>();
+	private ArrayList<Sensor> sensores = new ArrayList<Sensor>();
+	private ArrayList<Dado> dadosLidos = new ArrayList<Dado>();
 	
 	public HomeCare (Paciente paciente){
 		
@@ -18,7 +18,7 @@ public abstract class HomeCare {
 		return dadosLidos;
 	}
 	
-	protected void lerSensores(){
+	private void lerSensores(){
 		for(int i = 0; i < sensores.size(); i++){
 			dadosLidos.add(sensores.get(i).getDado());	
 		}

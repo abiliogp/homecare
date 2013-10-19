@@ -145,7 +145,6 @@ public class Coleta {
 				str = s.nextLine();
 				ip = manipulate(str, "ip", "<", ">");
 				st = manipulate(str, "st", ":", "<");
-				System.out.println(str);
 				switch (Msg.valueOf(st)) {
 				case cser:
 					break;
@@ -185,7 +184,7 @@ public class Coleta {
 		} else {
 			dataColeta = trieDatas.get(ip);
 			dataColeta.add(new Dado(st, data, time));
-			if(dataColeta.size() > 10){
+			if(dataColeta.size() > 1000){
 				System.out.println("Save to file " + dataColeta.size());
 				saveToFile();
 				dataColeta.clear();
