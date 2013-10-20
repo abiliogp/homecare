@@ -89,15 +89,15 @@ public class HomeCarePanel {
 		public GraphingData(String tipo) {
 			if(tipo.equals("card")){
 				this.cor = Color.red.darker();
-				label = "batimento médio: ";
+				label = "Batimento atual: ";
 			}
 			if(tipo.equals("temp")){
 				this.cor = Color.blue.darker();
-				label = "temperatura média: ";
+				label = "Temperatura atual: ";
 			}
 			if(tipo.equals("press")){
 				this.cor = Color.green.darker();
-				label = "pressão média: ";
+				label = "Pressão atual: ";
 			}
 		}
 
@@ -120,6 +120,11 @@ public class HomeCarePanel {
 			
 			// Ordinate label.
 			String s = label;
+			int max = getMax();
+			int min = getMin();
+			int value = data[data.length-1];
+			float ave = getAverage();
+			s = s + value + " | máximo: " + max + " | mínimo: " + min + " | média: " + ave;
 			float sy = h - PAD + (PAD - sh)  + lm.getAscent() + 10;
 			float sw = (float) font.getStringBounds(s, frc).getWidth();
 			float sx = (w - sw) / 2;
@@ -128,7 +133,7 @@ public class HomeCarePanel {
 			
 			// Draw lines.
 			double xInc = (double) (w - 2 * PAD) / (data.length - 1);
-			double scale = (double) (h - 2 * PAD) / getMax();
+			double scale = (double) (h - 2 * PAD) / max;
 			g2.setPaint(cor);
 			for (int i = 0; i < data.length - 1; i++) {
 				double x1 = PAD + i * xInc;
@@ -146,6 +151,23 @@ public class HomeCarePanel {
 					max = data[i];
 			}
 			return max;
+		}
+		
+		private int getMin() {
+			int min = 0;
+			for (int i = 0; i < data.length; i++) {
+				if (data[i] < min)
+					min = data[i];
+			}
+			return min;
+		}
+		
+		private float getAverage(){
+			int ave = 0;
+			for (int i = 0; i < data.length; i++) {
+				ave += data[i];
+			}
+			return ave/data.length;
 		}
 		
 		public void setDatas(int[] data){
