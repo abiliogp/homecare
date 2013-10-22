@@ -16,8 +16,6 @@ import com.sun.net.httpserver.HttpServer;
 
 public class httpServer {
 
-	private ArrayList<HomeCare> homeCares;
-
 	/*
 	 * Inicializa o servidor http
 	 */

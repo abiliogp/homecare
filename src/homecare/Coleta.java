@@ -37,6 +37,8 @@ public class Coleta {
 	private Thread senderThread;
 
 	private TreeMap<String, ArrayList<Dado>> trieDatas;
+	
+	public static Coleta me;
 
 	private enum Msg {
 		cser, csmy, temp, pres, card;
@@ -54,11 +56,11 @@ public class Coleta {
 	public void getDadosHomeCare() {
 
 	}
-	
+
 	public ArrayList<Socket> getClientList() {
 		return myClients;
 	}
-	
+
 	public TreeMap<String, ArrayList<Dado>> getTrieDatas() {
 		return trieDatas;
 	}
@@ -245,7 +247,6 @@ public class Coleta {
 		}
 	}
 
-	
 	private void saveToFile() {
 		try {
 			FileOutputStream fileOutput = new FileOutputStream("homecare.log",
@@ -286,14 +287,14 @@ public class Coleta {
 	// myport serverport
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
-		Coleta coleta = new Coleta("127.0.0.1", 12345);
+		me = new Coleta("127.0.0.1", 12345);
 
 		// tomar por padrao a mesma porta dae só se preocupa com o IP
 
 		Socket client = new Socket("127.0.0.1", 12345);
-		coleta.myServers.add(client);
-		
-		coleta.runServer();
+		me.myServers.add(client);
+
+		me.runServer();
 	}
 
 }
