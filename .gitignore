@@ -5,3 +5,4 @@ homecare.log
 .settings/
 bin/*
 *.class
+/bin

@@ -29,7 +29,7 @@ public class httpServer {
 	}
 	
 	/*
-	 * Responde o cliente com as informa��es dispon�veis
+	 * Responde o cliente com as informações disponíveis
 	 */
 	static class HandlerHttp implements HttpHandler {
         public void handle(HttpExchange t) throws IOException {
@@ -44,5 +44,8 @@ public class httpServer {
 	public void listaInfo(){
 		
 	}
-	
+
+	public static void main(String[] args) throws IOException {
+		httpServer server = new httpServer();
+	}
 }

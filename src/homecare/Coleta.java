@@ -54,6 +54,14 @@ public class Coleta {
 	public void getDadosHomeCare() {
 
 	}
+	
+	public ArrayList<Socket> getClientList() {
+		return myClients;
+	}
+	
+	public TreeMap<String, ArrayList<Dado>> getTrieDatas() {
+		return trieDatas;
+	}
 
 	public void runServer() {
 		receiverUpdate();
