@@ -287,14 +287,16 @@ public class Coleta {
 	// myport serverport
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
-		me = new Coleta("127.0.0.1", 12345);
+		Coleta coleta = new Coleta("127.0.0.1", 12345);
 
 		// tomar por padrao a mesma porta dae só se preocupa com o IP
 
 		Socket client = new Socket("127.0.0.1", 12345);
-		me.myServers.add(client);
-
-		me.runServer();
+		coleta.myServers.add(client);
+		
+		me = coleta;
+		
+		coleta.runServer();
 	}
 
 }
