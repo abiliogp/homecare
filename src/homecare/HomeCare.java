@@ -9,8 +9,12 @@ public class HomeCare {
 	private ArrayList<Sensor> sensores = new ArrayList<Sensor>();
 	private ArrayList<Dado> dadosLidos = new ArrayList<Dado>();
 	
-	public HomeCare (Paciente paciente){
-		
+	public HomeCare (){
+		paciente = new Paciente("Joao Pedro", "masc", "10/01/1991", "200.111.333-99");
+	}
+	
+	public String getCpf(){
+		return paciente.getCpf();
 	}
 	
 	public ArrayList<Dado> getDados(){

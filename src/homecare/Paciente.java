@@ -5,6 +5,14 @@ public class Paciente {
 	private String nome;
 	private String genero;
 	private String dataNasc;
+	private String cpf;
+	
+	public Paciente(String nome, String genero, String dataNasc, String cpf){
+		this.nome = nome;
+		this.genero = genero;
+		this.dataNasc = dataNasc;
+		this.cpf = cpf;
+	}
 	
 	
 	/*
@@ -22,5 +30,8 @@ public class Paciente {
 		return dataNasc;
 	}
 
+	public String getCpf(){
+		return cpf;
+	}
 	
 }
