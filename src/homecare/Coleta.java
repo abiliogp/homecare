@@ -42,11 +42,11 @@ public class Coleta {
 
 	private TreeMap<String, ArrayList<Dado>> trieDatas;
 	private TreeMap<String, String> trieIpCpf;
-	
+
 	public static Coleta me;
 
 	private enum Msg {
-		cser, csmy, temp, pres, card, ip, end;
+		cser, csmy, temp, press, presd, card, ip, end;
 	}
 
 	public Coleta(String myIp) throws IOException {
@@ -58,6 +58,7 @@ public class Coleta {
 		myServers = new ArrayList<Socket>();
 		trieDatas = new TreeMap<String, ArrayList<Dado>>();
 		trieIpCpf = new TreeMap<String, String>();
+		this.trieDatas.put(pacienteCpf, new ArrayList<Dado>());
 	}
 
 	public void getDadosHomeCare() {
@@ -89,10 +90,9 @@ public class Coleta {
 	private void waitForConnection() throws IOException {
 		Socket connection = server.accept();
 		String ip = connection.getInetAddress().getHostAddress();
-		System.out.println("Connection " + counter + " received from: "
-				+ ip);
-		
-		if(!this.trieIpCpf.containsKey(ip)){
+		System.out.println("Connection " + counter + " received from: " + ip);
+
+		if (!this.trieIpCpf.containsKey(ip)) {
 
 			this.myClients.add(connection);
 			System.out.println(this.myClients.size());
@@ -100,12 +100,11 @@ public class Coleta {
 			Socket client = new Socket(ip, this.defaultPort);
 			this.myServers.add(client);
 			this.trieIpCpf.put(ip, "");
-			
 
 			ClientConnection clientConnection = new ClientConnection();
 			new Thread(clientConnection).start();
 		}
-		
+
 	}
 
 	/*
@@ -115,7 +114,7 @@ public class Coleta {
 		public void run() {
 			try {
 				broadCast();
-				//clientsUpdate();
+				// clientsUpdate();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -159,9 +158,9 @@ public class Coleta {
 			Thread myThread = Thread.currentThread();
 			while (myThread == receiverThread) {
 				try {
-					
+
 					receiverBroadcast();
-					
+
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -176,28 +175,30 @@ public class Coleta {
 		String str, cpf, ip, st, data, time;
 		Scanner s = null;
 		boolean endSt = false;
-		Collection<Socket> forIteration = new HashSet<Socket>(this.myServers); 
-		int i=0;   
-		for (Socket connection : forIteration) {			
+		Collection<Socket> forIteration = new HashSet<Socket>(this.myServers);
+		int i = 0;
+		for (Socket connection : forIteration) {
 			System.out.println("receiver " + i);
 			i++;
-			if(connection != null){
+			if (connection != null) {
 				s = new Scanner(connection.getInputStream());
-				if(!s.hasNext()){
-					System.out.println("parou " + connection.getInetAddress().getHostAddress());
-					this.trieIpCpf.remove(connection.getInetAddress().getHostAddress());
+				if (!s.hasNext()) {
+					System.out.println("parou "
+							+ connection.getInetAddress().getHostAddress());
+					this.trieIpCpf.remove(connection.getInetAddress()
+							.getHostAddress());
 					this.myServers.remove(connection);
 					break;
 				}
 			}
-			
+
 			while (s.hasNextLine()) {
 				str = s.nextLine();
 				cpf = manipulate(str, "cpf", "<", ">");
 				st = manipulate(str, "st", ":", "<");
 				System.out.println(str);
-				if(st == null || Msg.valueOf(st) == null){
-				 break;
+				if (st == null || Msg.valueOf(st) == null) {
+					break;
 				}
 				switch (Msg.valueOf(st)) {
 				case end:
@@ -214,14 +215,14 @@ public class Coleta {
 					saveData(cpf, st, data, time);
 					break;
 				}
-				if(endSt){
+				if (endSt) {
 					break;
 				}
 			}
-			
+
 			s = null;
 			connection = null;
-			
+
 		}
 	}
 
@@ -230,16 +231,16 @@ public class Coleta {
 	 */
 	private void updateClientList(String cpf, String ip)
 			throws UnknownHostException, IOException {
-		if(this.trieIpCpf.get(ip) != null){
-			if(this.trieIpCpf.get(ip).equals(""))
-				this.trieIpCpf.put(ip,cpf);
+		if (this.trieIpCpf.get(ip) != null) {
+			if (this.trieIpCpf.get(ip).equals(""))
+				this.trieIpCpf.put(ip, cpf);
 			System.out.println("update cpf");
 		}
 		if (!ip.equals(this.myIp) && !this.trieIpCpf.containsKey(ip)) {
 			Socket client = new Socket(ip, this.defaultPort);
 			this.myServers.add(client);
 			this.trieIpCpf.put(ip, cpf);
-			System.err.println("my servers size " +this.myServers.size());
+			System.err.println("my servers size " + this.myServers.size());
 		}
 
 	}
@@ -256,7 +257,7 @@ public class Coleta {
 		} else {
 			dataColeta = trieDatas.get(cpf);
 			dataColeta.add(new Dado(st, data, time));
-			if (dataColeta.size() > 10) {
+			if (dataColeta.size() > 1000) {
 				System.out.println("Save to file " + dataColeta.size());
 				saveToFile();
 				dataColeta.clear();
@@ -290,19 +291,23 @@ public class Coleta {
 		}
 	}
 
+	/*
+	 * envia dados para os clientes e salva os próprios dados
+	 */
 	private void senderDatas() throws IOException {
-		int i = 0;
+		ArrayList<Dado> cpfDatas;
+		ArrayList<Dado> myDatas = this.myHomeCare.getDados();
+		cpfDatas = this.trieDatas.get(this.pacienteCpf);
+		cpfDatas.addAll(myDatas);
+		System.err.println("size trie " + cpfDatas.size());
 		for (Socket coleta : this.myClients) {
 			PrintStream ps = new PrintStream(coleta.getOutputStream());
-			ps.println("cpf<" + this.pacienteCpf + ">st:temp<" + 10 + ">"
-					+ "time<"
-					+ (new Timestamp(new Date().getTime())).toString() + ">");
-			ps.println("cpf<" + this.pacienteCpf + ">st:pres<" + 11 + ">"
-					+ "time<"
-					+ (new Timestamp(new Date().getTime())).toString() + ">");
-			ps.println("cpf<" + this.pacienteCpf + ">st:card<" + i++ + ">"
-					+ "time<"
-					+ (new Timestamp(new Date().getTime())).toString() + ">");
+			for (int i = 0; i < myDatas.size(); i++) {
+				ps.println("cpf<" + this.pacienteCpf + ">st:"
+						+ myDatas.get(i).getTipo() + "<"
+						+ myDatas.get(i).getValor() + ">" 
+						+ "time<" + myDatas.get(i).getTime() + ">");
+			}
 			ps.println("cpf<" + this.pacienteCpf + ">st:end<");
 		}
 	}
@@ -310,7 +315,8 @@ public class Coleta {
 	private void saveToFile() {
 		try {
 			String time = new Timestamp(new Date().getTime()).toString();
-			FileOutputStream fileOutput = new FileOutputStream("homecare" + time +".log");
+			FileOutputStream fileOutput = new FileOutputStream("homecare"
+					+ time + ".log");
 			ObjectOutputStream objectOutput = new ObjectOutputStream(
 					new BufferedOutputStream(fileOutput));
 			objectOutput.writeObject(trieDatas);
@@ -354,8 +360,6 @@ public class Coleta {
 
 		Socket client = new Socket("192.168.1.100", 12345);
 		coleta.myServers.add(client);
-		
-		
 
 		me = coleta;
 

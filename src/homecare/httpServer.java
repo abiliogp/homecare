@@ -154,7 +154,7 @@ public class httpServer {
 						if (trieDatas.containsKey(ip)) {
 							ArrayList<Dado> dataColeta = trieDatas.get(ip);
 							for (Dado dado : dataColeta) {
-								body += "<tr><td>Dado</td><td>" + dado.getDados()
+								body += "<tr><td>Dado</td><td>" + dado.getValor()
 										+ " " + dado.getUnidadeMedida()
 										+ "</td></tr>";// nome do paciente
 							}

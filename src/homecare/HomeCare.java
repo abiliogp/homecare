@@ -10,7 +10,7 @@ public class HomeCare {
 	private ArrayList<Dado> dadosLidos = new ArrayList<Dado>();
 	
 	public HomeCare (){
-		paciente = new Paciente("Joao Pedro", "masc", "10/01/1991", "254.122.321-88");
+		paciente = new Paciente("Joao Pedro", "masc", "10/01/1991", "111.222.333-00");
 	}
 	
 	public String getCpf(){
@@ -18,13 +18,20 @@ public class HomeCare {
 	}
 	
 	public ArrayList<Dado> getDados(){
+		if(!dadosLidos.isEmpty()){
+			dadosLidos.clear();
+		}
 		lerSensores();
 		return dadosLidos;
 	}
 	
 	private void lerSensores(){
-		for(int i = 0; i < sensores.size(); i++){
-			dadosLidos.add(sensores.get(i).getDado());	
+		
+		for(int i = 0; i < 20; i++){
+			dadosLidos.add(new Dado("21","temp"));
+			dadosLidos.add(new Dado("14","press"));
+			dadosLidos.add(new Dado("7","presd"));
+			dadosLidos.add(new Dado("66","card"));
 		}
 	}
 	
