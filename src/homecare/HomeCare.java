@@ -10,7 +10,7 @@ public class HomeCare {
 	private ArrayList<Dado> dadosLidos = new ArrayList<Dado>();
 	
 	public HomeCare (){
-		paciente = new Paciente("Joao Pedro", "masc", "10/01/1991", "200.111.333-99");
+		paciente = new Paciente("Joao Pedro", "masc", "10/01/1991", "254.122.321-88");
 	}
 	
 	public String getCpf(){

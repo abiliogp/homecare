@@ -17,7 +17,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.sql.ClientInfoStatus;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.sql.Timestamp;
@@ -39,11 +41,12 @@ public class Coleta {
 	private Thread senderThread, receiverThread;
 
 	private TreeMap<String, ArrayList<Dado>> trieDatas;
-
+	private TreeMap<String, String> trieIpCpf;
+	
 	public static Coleta me;
 
 	private enum Msg {
-		cser, csmy, temp, pres, card, ip;
+		cser, csmy, temp, pres, card, ip, end;
 	}
 
 	public Coleta(String myIp) throws IOException {
@@ -54,6 +57,7 @@ public class Coleta {
 		myClients = new ArrayList<Socket>();
 		myServers = new ArrayList<Socket>();
 		trieDatas = new TreeMap<String, ArrayList<Dado>>();
+		trieIpCpf = new TreeMap<String, String>();
 	}
 
 	public void getDadosHomeCare() {
@@ -74,8 +78,6 @@ public class Coleta {
 		while (true) {
 			try {
 				waitForConnection();
-				receiverUpdate();
-				senderUpdate();
 			} catch (IOException e) {
 				e.printStackTrace();
 			} finally {
@@ -86,14 +88,24 @@ public class Coleta {
 
 	private void waitForConnection() throws IOException {
 		Socket connection = server.accept();
+		String ip = connection.getInetAddress().getHostAddress();
 		System.out.println("Connection " + counter + " received from: "
-				+ connection.getRemoteSocketAddress());
+				+ ip);
+		
+		if(!this.trieIpCpf.containsKey(ip)){
 
-		this.myClients.add(connection);
-		System.out.println(this.myClients.size());
+			this.myClients.add(connection);
+			System.out.println(this.myClients.size());
 
-		ClientConnection clientConnection = new ClientConnection();
-		new Thread(clientConnection).start();
+			Socket client = new Socket(ip, this.defaultPort);
+			this.myServers.add(client);
+			this.trieIpCpf.put(ip, "");
+			
+
+			ClientConnection clientConnection = new ClientConnection();
+			new Thread(clientConnection).start();
+		}
+		
 	}
 
 	/*
@@ -103,7 +115,7 @@ public class Coleta {
 		public void run() {
 			try {
 				broadCast();
-				clientsUpdate();
+				//clientsUpdate();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -147,7 +159,9 @@ public class Coleta {
 			Thread myThread = Thread.currentThread();
 			while (myThread == receiverThread) {
 				try {
+					
 					receiverBroadcast();
+					
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -160,18 +174,38 @@ public class Coleta {
 	 */
 	private void receiverBroadcast() throws IOException {
 		String str, cpf, ip, st, data, time;
-		for (Socket connection : this.myServers) {
-			Scanner s = new Scanner(connection.getInputStream());
+		Scanner s = null;
+		boolean endSt = false;
+		Collection<Socket> forIteration = new HashSet<Socket>(this.myServers); 
+		int i=0;   
+		for (Socket connection : forIteration) {			
+			System.out.println("receiver " + i);
+			i++;
+			if(connection != null){
+				s = new Scanner(connection.getInputStream());
+				if(!s.hasNext()){
+					System.out.println("parou " + connection.getInetAddress().getHostAddress());
+					this.trieIpCpf.remove(connection.getInetAddress().getHostAddress());
+					this.myServers.remove(connection);
+					break;
+				}
+			}
+			
 			while (s.hasNextLine()) {
 				str = s.nextLine();
 				cpf = manipulate(str, "cpf", "<", ">");
 				st = manipulate(str, "st", ":", "<");
 				System.out.println(str);
+				if(st == null || Msg.valueOf(st) == null){
+				 break;
+				}
 				switch (Msg.valueOf(st)) {
-				case cser:
+				case end:
+					endSt = true;
 					break;
-				case csmy:
+				case ip:
 					ip = manipulate(str, "ip", "<", ">");
+					System.out.println("new ip " + ip);
 					updateClientList(cpf, ip);
 					break;
 				default:
@@ -180,8 +214,14 @@ public class Coleta {
 					saveData(cpf, st, data, time);
 					break;
 				}
+				if(endSt){
+					break;
+				}
 			}
-			s.close();
+			
+			s = null;
+			connection = null;
+			
 		}
 	}
 
@@ -190,11 +230,18 @@ public class Coleta {
 	 */
 	private void updateClientList(String cpf, String ip)
 			throws UnknownHostException, IOException {
-		// if (!ip.equals(this.myIp)) {
-		System.err.println("new client " + ip);
-		Socket client = new Socket(ip, this.defaultPort);
-		this.myServers.add(client);
-		// }
+		if(this.trieIpCpf.get(ip) != null){
+			if(this.trieIpCpf.get(ip).equals(""))
+				this.trieIpCpf.put(ip,cpf);
+			System.out.println("update cpf");
+		}
+		if (!ip.equals(this.myIp) && !this.trieIpCpf.containsKey(ip)) {
+			Socket client = new Socket(ip, this.defaultPort);
+			this.myServers.add(client);
+			this.trieIpCpf.put(ip, cpf);
+			System.err.println("my servers size " +this.myServers.size());
+		}
+
 	}
 
 	/*
@@ -209,7 +256,7 @@ public class Coleta {
 		} else {
 			dataColeta = trieDatas.get(cpf);
 			dataColeta.add(new Dado(st, data, time));
-			if (dataColeta.size() > 1000) {
+			if (dataColeta.size() > 10) {
 				System.out.println("Save to file " + dataColeta.size());
 				saveToFile();
 				dataColeta.clear();
@@ -256,13 +303,14 @@ public class Coleta {
 			ps.println("cpf<" + this.pacienteCpf + ">st:card<" + i++ + ">"
 					+ "time<"
 					+ (new Timestamp(new Date().getTime())).toString() + ">");
+			ps.println("cpf<" + this.pacienteCpf + ">st:end<");
 		}
 	}
 
 	private void saveToFile() {
 		try {
-			FileOutputStream fileOutput = new FileOutputStream("homecare.log",
-					true);
+			String time = new Timestamp(new Date().getTime()).toString();
+			FileOutputStream fileOutput = new FileOutputStream("homecare" + time +".log");
 			ObjectOutputStream objectOutput = new ObjectOutputStream(
 					new BufferedOutputStream(fileOutput));
 			objectOutput.writeObject(trieDatas);
@@ -300,12 +348,14 @@ public class Coleta {
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
 
-		Coleta coleta = new Coleta("127.0.0.1");
+		Coleta coleta = new Coleta("192.168.1.101");
 
 		// tomar por padrao a mesma porta dae só se preocupa com o IP
 
-		Socket client = new Socket("127.0.0.1", 12345);
+		Socket client = new Socket("192.168.1.100", 12345);
 		coleta.myServers.add(client);
+		
+		
 
 		me = coleta;
 
