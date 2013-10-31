@@ -6,23 +6,23 @@ import java.util.Date;
 
 public class Dado implements Serializable{  
 
-	private String valor;
+	private double valor;
 	private String tipo;
 	private String time;
 	
-	public Dado (String valor, String tipo){
+	public Dado (double valor, String tipo){
 		this.valor = valor;
 		this.tipo = tipo;
 		this.time = (new Timestamp(new Date().getTime())).toString();
 	}
 	
-	public Dado (String valor, String tipo, String time){
+	public Dado (double valor, String tipo, String time){
 		this.valor = valor;
 		this.tipo = tipo;
 		this.time = time;
 	}
 	
-	public String getValor() {
+	public double getValor() {
 		return valor;
 	}
 	
@@ -34,7 +34,7 @@ public class Dado implements Serializable{
 		return time;
 	}
 	
-	public void setDados(String dado) {
+	public void setDados(double dado) {
 		this.valor = dado;
 	}
 	public String getUnidadeMedida() {

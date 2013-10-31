@@ -6,12 +6,14 @@ public class Paciente {
 	private String genero;
 	private String dataNasc;
 	private String cpf;
+	private String idade;
 	
-	public Paciente(String nome, String genero, String dataNasc, String cpf){
+	public Paciente(String nome, String genero, String dataNasc,  String cpf, String idade){
 		this.nome = nome;
 		this.genero = genero;
 		this.dataNasc = dataNasc;
 		this.cpf = cpf;
+		this.idade = idade;
 	}
 	
 	
@@ -26,6 +28,10 @@ public class Paciente {
 		return genero;
 	}
 
+	public String getIdade() {
+		return idade;
+	}
+	
 	public String getDataNasc() {
 		return dataNasc;
 	}

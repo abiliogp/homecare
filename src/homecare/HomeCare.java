@@ -1,6 +1,7 @@
 package homecare;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class HomeCare {
 
@@ -10,7 +11,7 @@ public class HomeCare {
 	private ArrayList<Dado> dadosLidos = new ArrayList<Dado>();
 	
 	public HomeCare (){
-		paciente = new Paciente("Joao Pedro", "masc", "10/01/1991", "111.222.333-00");
+		paciente = new Paciente(" Johnny Cash", "male", "26/02/1932", "111.222.333-00","71");
 	}
 	
 	public String getCpf(){
@@ -26,12 +27,12 @@ public class HomeCare {
 	}
 	
 	private void lerSensores(){
-		
+		Random rad = new Random();
 		for(int i = 0; i < 20; i++){
-			dadosLidos.add(new Dado("21","temp"));
-			dadosLidos.add(new Dado("14","press"));
-			dadosLidos.add(new Dado("7","presd"));
-			dadosLidos.add(new Dado("66","card"));
+			dadosLidos.add(new Dado(35.5 + rad.nextDouble() * 2,"temp"));
+			dadosLidos.add(new Dado(13.45 +  rad.nextDouble() * 2,"press"));
+			dadosLidos.add(new Dado(5.1 + rad.nextDouble() * 3,"presd"));
+			dadosLidos.add(new Dado(66.75 + rad.nextDouble() * 10,"card"));
 		}
 	}
 	

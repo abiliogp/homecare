@@ -20,19 +20,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.sql.Timestamp;
 import java.util.Date;
 
-public class Coleta {
+public class Coleta implements Runnable{
 
 	private HomeCare myHomeCare;
 	private String pacienteCpf;
 	private ArrayList<Socket> myClients;
-	private ArrayList<Socket> myServers;
+	ArrayList<Socket> myServers;
 
-	private int defaultPort = 12345;
+	private int defaultPort = 12344;
 	private String myIp;
 
 	private ServerSocket server;
@@ -40,7 +41,7 @@ public class Coleta {
 	private int counter = 1;
 	private Thread senderThread, receiverThread;
 
-	private TreeMap<String, ArrayList<Dado>> trieDatas;
+	private static TreeMap<String, ArrayList<Dado>> trieDatas;
 	private TreeMap<String, String> trieIpCpf;
 
 	public static Coleta me;
@@ -59,6 +60,7 @@ public class Coleta {
 		trieDatas = new TreeMap<String, ArrayList<Dado>>();
 		trieIpCpf = new TreeMap<String, String>();
 		this.trieDatas.put(pacienteCpf, new ArrayList<Dado>());
+		
 	}
 
 	public void getDadosHomeCare() {
@@ -73,7 +75,14 @@ public class Coleta {
 		return trieDatas;
 	}
 
-	public void runServer() {
+	public static List<Dado> getLastDatasOfCpf(String cpf){
+		int size = trieDatas.get(cpf).size();
+		List<Dado> subList = new ArrayList();
+		subList = trieDatas.get(cpf).subList(size-80, size);
+		return subList ;
+	}
+	
+	public void run() {
 		receiverUpdate();
 		senderUpdate();
 		while (true) {
@@ -110,7 +119,7 @@ public class Coleta {
 	/*
 	 * Suporte à vários clientes conectados ao servidor
 	 */
-	private class ClientConnection implements Runnable {
+	public class ClientConnection implements Runnable {
 		public void run() {
 			try {
 				broadCast();
@@ -172,7 +181,8 @@ public class Coleta {
 	 * Recebe informações do cliente conectado
 	 */
 	private void receiverBroadcast() throws IOException {
-		String str, cpf, ip, st, data, time;
+		String str, cpf, ip, st, time;
+		double data;
 		Scanner s = null;
 		boolean endSt = false;
 		Collection<Socket> forIteration = new HashSet<Socket>(this.myServers);
@@ -210,7 +220,7 @@ public class Coleta {
 					updateClientList(cpf, ip);
 					break;
 				default:
-					data = manipulate(str, st, "<", ">");
+					data = Double.parseDouble(manipulate(str, st, "<", ">"));
 					time = manipulate(str, "time", "<", ">");
 					saveData(cpf, st, data, time);
 					break;
@@ -248,15 +258,15 @@ public class Coleta {
 	/*
 	 * salvar dados
 	 */
-	private void saveData(String cpf, String st, String data, String time) {
+	private void saveData(String cpf, String st, double data, String time) {
 		ArrayList<Dado> dataColeta;
 		if (!trieDatas.containsKey(cpf)) {
 			dataColeta = new ArrayList<Dado>();
-			dataColeta.add(new Dado(st, data, time));
+			dataColeta.add(new Dado(data, st ,time));
 			trieDatas.put(cpf, dataColeta);
 		} else {
 			dataColeta = trieDatas.get(cpf);
-			dataColeta.add(new Dado(st, data, time));
+			dataColeta.add(new Dado(data, st ,time));
 			if (dataColeta.size() > 1000) {
 				System.out.println("Save to file " + dataColeta.size());
 				saveToFile();
@@ -354,16 +364,16 @@ public class Coleta {
 	public static void main(String[] args) throws UnknownHostException,
 			IOException {
 
-		Coleta coleta = new Coleta("192.168.1.101");
+		Coleta coleta = new Coleta("127.0.0.1");
 
 		// tomar por padrao a mesma porta dae só se preocupa com o IP
 
-		Socket client = new Socket("192.168.1.100", 12345);
+		Socket client = new Socket("127.0.0.1", 12345);
 		coleta.myServers.add(client);
 
 		me = coleta;
 
-		coleta.runServer();
+		//coleta.runServer();
 	}
 
 }
