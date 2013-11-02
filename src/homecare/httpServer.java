@@ -52,13 +52,13 @@ public class httpServer {
 	public void initServer() throws IOException {
 		try {
 			HttpServer server;
-			atualizaNoIP();
 			server = HttpServer.create(new InetSocketAddress(port), 0);
 			server.createContext("/", new HandlerHttp());
 			server.setExecutor(null); // creates a default executor
 			server.start();
 		} catch (Exception e) {
-			System.out.println(e.toString());
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
@@ -73,8 +73,9 @@ public class httpServer {
 					whatismyip.openStream()));
 			ip = in.readLine();
 			in.close();
-		} catch (IOException e) {
-			System.out.println(e.toString());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		return ip;
 	}
@@ -91,8 +92,9 @@ public class httpServer {
 			user_pass = bufferInput.readLine();
 			port = Integer.parseInt(bufferInput.readLine());
 			fileInput.close();
-		} catch (IOException e) {
-			System.out.println(e.toString());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
@@ -100,10 +102,9 @@ public class httpServer {
 
 		public void run() {
 			try {
-				Thread.sleep(180000);
+				Thread.sleep(120000);
 				if (InetAddress.getByName("homecare.sytes.net")
-						.getHostAddress()
-						.equals(httpServer.getIP())) {
+						.getHostAddress().equals(httpServer.getIP())) {
 					Coleta.me.webServer.initServer();
 				}
 			} catch (Exception e) {
@@ -170,11 +171,58 @@ public class httpServer {
 				header += "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n";
 				header += "<head>\n";
 				header += "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n";
+				header += "<meta http-equiv=\"refresh\" content=\"5\">";
 				header += "<title>HomeCare - UFPel</title>\n";
 				header += "</head>\n";
 				header += "<body>\n";
-				header += "<table>\n";
+				header += "<table border=\"1\">\n";
 				os.write(header.getBytes());
+				String body = "<tr>";
+				String tipo;
+				int cont_dados[] = { 0, 0, 0, 0 };
+				body += "<tr><td>CPF</td><td>"
+						+ Coleta.me.getHomeCare().getCpf() + "</td></tr>";// cpf
+				// do
+				// paciente
+				dados = (CopyOnWriteArrayList<Dado>) Coleta
+						.getLastDatasOfCpf(Coleta.me.getHomeCare().getCpf());
+				if (dados != null) {
+					for (Dado dado : dados) {
+						tipo = dado.getTipo();
+						switch (Msg.valueOf(tipo)) {
+						case temp:
+							cont_dados[0]++;
+							if (cont_dados[0] == 20)
+								body += "<tr><td>Temperature</td><td>"
+										+ String.format("%.2f", dado.getValor())
+										+ " ºC</td></tr>";
+							break;
+						case press:
+							cont_dados[1]++;
+							if (cont_dados[1] == 20)
+								body += "<tr><td>Pressure Systolic</td><td>"
+										+ String.format("%.2f", dado.getValor())
+										+ " mmHg</td></tr>";
+							break;
+						case presd:
+							cont_dados[2]++;
+							if (cont_dados[2] == 20)
+								body += "<tr><td>Pressure Diastolic</td><td>"
+										+ String.format("%.2f", dado.getValor())
+										+ " mmHg</td></tr>";
+							break;
+						case card:
+							cont_dados[3]++;
+							if (cont_dados[3] == 20)
+								body += "<tr><td>Pulse</td><td>"
+										+ String.format("%.0f", dado.getValor())
+										+ "</td></tr>";
+							break;
+						}
+					}
+				}
+				body += "</tr><br>";
+				os.write(body.getBytes());
 				if (clients != null) {
 					for (Socket socket : clients) {
 						String ip = socket.getInetAddress().getHostAddress();
@@ -182,42 +230,51 @@ public class httpServer {
 						if (cpf != null) {
 							dados = (CopyOnWriteArrayList<Dado>) Coleta
 									.getLastDatasOfCpf(cpf);
-							String body = "<tr>";
-							body += "<tr><td>Paciente</td><td>Nome</td></tr>";// nome
-																				// do
-																				// paciente
+							body = "<tr>";
 							body += "<tr><td>CPF</td><td>" + cpf + "</td></tr>";// cpf
 																				// do
 																				// paciente
 							if (dados != null) {
-								String tipo;
+								cont_dados[0] = cont_dados[1] = cont_dados[2] = cont_dados[30] = 0;
 								for (Dado dado : dados) {
 									tipo = dado.getTipo();
 									switch (Msg.valueOf(tipo)) {
 									case temp:
-										body += "<tr><td>Temperature</td><td>"
-												+ dado.getValor()
-												+ " ÂºC</td></tr>";
+										cont_dados[0]++;
+										if (cont_dados[0] == 20)
+											body += "<tr><td>Temperature</td><td>"
+													+ String.format("%.2f",
+															dado.getValor())
+													+ " ºC</td></tr>";
 										break;
 									case press:
-										body += "<tr><td>Pressure Systolic</td><td>"
-												+ dado.getValor()
-												+ " mmHg</td></tr>";
+										cont_dados[1]++;
+										if (cont_dados[1] == 20)
+											body += "<tr><td>Pressure Systolic</td><td>"
+													+ String.format("%.2f",
+															dado.getValor())
+													+ " mmHg</td></tr>";
 										break;
 									case presd:
-										body += "<tr><td>Pressure Diastolic</td><td>"
-												+ dado.getValor()
-												+ " mmHg</td></tr>";
+										cont_dados[2]++;
+										if (cont_dados[2] == 20)
+											body += "<tr><td>Pressure Diastolic</td><td>"
+													+ String.format("%.2f",
+															dado.getValor())
+													+ " mmHg</td></tr>";
 										break;
 									case card:
-										body += "<tr><td>Pulse</td><td>"
-												+ dado.getValor()
-												+ "</td></tr>";
+										cont_dados[3]++;
+										if (cont_dados[3] == 20)
+											body += "<tr><td>Pulse</td><td>"
+													+ String.format("%.0f",
+															dado.getValor())
+													+ "</td></tr>";
 										break;
 									}
 								}
 							}
-							body += "</tr><tr></tr>";
+							body += "</tr><br>";
 							os.write(body.getBytes());
 						}
 					}
@@ -228,16 +285,14 @@ public class httpServer {
 				os.write(footer.getBytes());
 				os.close();
 			} catch (Exception e) {
-				System.out.println(e.toString());
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
 
-	public void listaInfo() {
-
-	}
-
 	public static void main(String[] args) throws IOException {
 		httpServer server = new httpServer();
+		server.initServer();
 	}
 }

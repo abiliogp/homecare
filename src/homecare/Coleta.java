@@ -65,6 +65,7 @@ public class Coleta implements Runnable {
 		trieDatas = new TreeMap<String, CopyOnWriteArrayList<Dado>>();
 		trieIpCpf = new TreeMap<String, String>();
 		webServer = new httpServer();
+		me = this;
 		this.trieDatas.put(pacienteCpf, new CopyOnWriteArrayList<Dado>());
 	}
 
@@ -138,7 +139,7 @@ public class Coleta implements Runnable {
 	}
 
 	/*
-	 * Suporte Ã  vÃ¡rios clientes conectados ao servidor
+	 * Suporte à vários clientes conectados ao servidor
 	 */
 	public class ClientConnection implements Runnable {
 		public void run() {
@@ -152,7 +153,7 @@ public class Coleta implements Runnable {
 	}
 
 	/*
-	 * Envia as informaÃ§Ãµes do servidor para todos os clientes
+	 * Envia as informações do servidor para todos os clientes
 	 */
 	private void broadCast() throws IOException {
 		for (Socket coleta : this.myClients) {
@@ -175,7 +176,7 @@ public class Coleta implements Runnable {
 	}
 
 	/*
-	 * Recebe informaÃ§Ãµes dos servidores
+	 * Recebe informações dos servidores
 	 */
 	private void receiverUpdate() {
 		Receiver receiverConnection = new Receiver();
@@ -197,7 +198,7 @@ public class Coleta implements Runnable {
 	}
 
 	/*
-	 * Recebe informaÃ§Ãµes do cliente conectado
+	 * Recebe informações do cliente conectado
 	 */
 	private void receiverBroadcast() throws IOException {
 		String str, cpf, ip, st, time;
@@ -217,7 +218,7 @@ public class Coleta implements Runnable {
 					if (InetAddress
 							.getByName("homecare.sytes.net")
 							.getHostAddress()
-							.equals(httpServer.getIP())) {
+							.equals(connection.getInetAddress().getHostAddress())) {
 						try {
 							webServer.atualizaNoIP();
 						} catch (Exception e) {
@@ -268,7 +269,7 @@ public class Coleta implements Runnable {
 	}
 
 	/*
-	 * faz conexÃ£o com novo cliente abrir conexao com o novo cliente
+	 * faz conexão com novo cliente abrir conexao com o novo cliente
 	 */
 	private void updateClientList(String cpf, String ip)
 			throws UnknownHostException, IOException {
@@ -308,7 +309,7 @@ public class Coleta implements Runnable {
 	}
 
 	/*
-	 * Envia as informaÃ§Ãµes coletas
+	 * Envia as informações coletas
 	 */
 	private void senderUpdate() {
 		Sender sender = new Sender();
@@ -333,7 +334,7 @@ public class Coleta implements Runnable {
 	}
 
 	/*
-	 * envia dados para os clientes e salva os prÃ³prios dados
+	 * envia dados para os clientes e salva os próprios dados
 	 */
 	private void senderDatas() throws IOException {
 		CopyOnWriteArrayList<Dado> cpfDatas;
@@ -396,12 +397,10 @@ public class Coleta implements Runnable {
 
 		Coleta coleta = new Coleta("127.0.0.1");
 
-		// tomar por padrao a mesma porta dae sÃ³ se preocupa com o IP
+		// tomar por padrao a mesma porta dae só se preocupa com o IP
 
 		Socket client = new Socket("127.0.0.1", 12345);
 		coleta.myServers.add(client);
-
-		me = coleta;
 
 		// coleta.runServer();
 	}
