@@ -44,6 +44,8 @@ public class Coleta implements Runnable {
 
 	private static TreeMap<String, CopyOnWriteArrayList<Dado>> trieDatas;
 
+	public httpServer webServer;
+
 	private TreeMap<String, String> trieIpCpf;
 	private static CopyOnWriteArrayList<Dado> subList = new CopyOnWriteArrayList<Dado>();
 
@@ -62,6 +64,7 @@ public class Coleta implements Runnable {
 		myServers = new ArrayList<Socket>();
 		trieDatas = new TreeMap<String, CopyOnWriteArrayList<Dado>>();
 		trieIpCpf = new TreeMap<String, String>();
+		webServer = new httpServer();
 		this.trieDatas.put(pacienteCpf, new CopyOnWriteArrayList<Dado>());
 	}
 
@@ -73,6 +76,13 @@ public class Coleta implements Runnable {
 		return myClients;
 	}
 
+	public String getCpfFromIp(String ip) {
+		if (this.trieIpCpf.containsKey(ip)) {
+			return this.trieIpCpf.get(ip);
+		}
+		return null;
+	}
+
 	public TreeMap<String, CopyOnWriteArrayList<Dado>> getTrieDatas() {
 		return trieDatas;
 	}
@@ -80,7 +90,7 @@ public class Coleta implements Runnable {
 	public static CopyOnWriteArrayList<Dado> getLastDatasOfCpf(String cpf) {
 		if (trieDatas.get(cpf) != null) {
 			int size = trieDatas.get(cpf).size();
-			if(!subList.isEmpty()){
+			if (!subList.isEmpty()) {
 				subList.clear();
 			}
 			if (size > 80) {
@@ -204,6 +214,17 @@ public class Coleta implements Runnable {
 				if (!s.hasNext()) {
 					System.out.println("parou "
 							+ connection.getInetAddress().getHostAddress());
+					if (InetAddress
+							.getByName("homecare.sytes.net")
+							.getHostAddress()
+							.equals(httpServer.getIP())) {
+						try {
+							webServer.atualizaNoIP();
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 					this.trieIpCpf.remove(connection.getInetAddress()
 							.getHostAddress());
 					this.myServers.remove(connection);

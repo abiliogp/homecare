@@ -16,6 +16,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
@@ -34,13 +35,23 @@ public class httpServer {
 	private int port;
 	private String user_pass;
 
+	private enum Msg {
+		temp, press, presd, card;
+	}
+
 	/*
 	 * Inicializa o servidor http
 	 */
-	public httpServer() throws IOException {
+	public httpServer() {
+		loadConfigs();
+	}
+
+	/*
+	 * Inicializa o servidor http
+	 */
+	public void initServer() throws IOException {
 		try {
 			HttpServer server;
-			loadConfigs();
 			atualizaNoIP();
 			server = HttpServer.create(new InetSocketAddress(port), 0);
 			server.createContext("/", new HandlerHttp());
@@ -54,11 +65,12 @@ public class httpServer {
 	/*
 	 * Get IP
 	 */
-	private static String getIP() {
+	public static String getIP() {
 		String ip = "127.0.0.1";
 		try {
 			URL whatismyip = new URL("http://checkip.amazonaws.com");
-			BufferedReader in = new BufferedReader(new InputStreamReader(whatismyip.openStream()));
+			BufferedReader in = new BufferedReader(new InputStreamReader(
+					whatismyip.openStream()));
 			ip = in.readLine();
 			in.close();
 		} catch (IOException e) {
@@ -66,14 +78,15 @@ public class httpServer {
 		}
 		return ip;
 	}
-	
+
 	/*
-	 * Carrega informações de configuração
+	 * Carrega informaÃ§Ãµes de configuraÃ§Ã£o
 	 */
 	private void loadConfigs() {
 		try {
 			FileInputStream fileInput = new FileInputStream("homecare.web");
-			BufferedReader bufferInput = new BufferedReader(new InputStreamReader(fileInput));
+			BufferedReader bufferInput = new BufferedReader(
+					new InputStreamReader(fileInput));
 			host = bufferInput.readLine();
 			user_pass = bufferInput.readLine();
 			port = Integer.parseInt(bufferInput.readLine());
@@ -83,12 +96,31 @@ public class httpServer {
 		}
 	}
 
+	private class webServerVerify implements Runnable {
+
+		public void run() {
+			try {
+				Thread.sleep(180000);
+				if (InetAddress.getByName("homecare.sytes.net")
+						.getHostAddress()
+						.equals(httpServer.getIP())) {
+					Coleta.me.webServer.initServer();
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
 	/*
 	 * HTTP GET request
 	 */
-	private void atualizaNoIP() throws Exception {
-
-		URL obj = new URL("http://dynupdate.no-ip.com/nic/update?hostname="+host+"&myip="+getIP());
+	public void atualizaNoIP() throws Exception {
+		Thread thread;
+		webServerVerify webserververify = new webServerVerify();
+		URL obj = new URL("http://dynupdate.no-ip.com/nic/update?hostname="
+				+ host + "&myip=" + getIP());
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
 		// optional default is GET
@@ -96,10 +128,9 @@ public class httpServer {
 
 		// add request header
 		con.setRequestProperty("User-Agent", "Homecare homecare_no_ip");
-		con.setRequestProperty("Authorization",
-				"Basic "+user_pass);// cmFwaGFlbHRzMzpzbm91Zmx5MzEy
-														// =
-														// base64encode("user:password")
+		con.setRequestProperty("Authorization", "Basic " + user_pass);// cmFwaGFlbHRzMzpzbm91Zmx5MzEy
+																		// =
+																		// base64encode("user:password")
 
 		int responseCode = con.getResponseCode();
 		System.out.println(responseCode);
@@ -116,19 +147,19 @@ public class httpServer {
 
 		// print result
 		System.out.println(response.toString());
-
+		thread = new Thread(webserververify);
+		thread.start();
 	}
 
 	/*
-	 * Responde o cliente com as informações disponíveis
+	 * Responde o cliente com as informaÃ§Ãµes disponÃ­veis
 	 */
 	static class HandlerHttp implements HttpHandler {
 		public void handle(HttpExchange t) throws IOException {
 			ArrayList<Socket> clients = null;
-			TreeMap<String,CopyOnWriteArrayList<Dado>> trieDatas = null;
+			CopyOnWriteArrayList<Dado> dados = new CopyOnWriteArrayList<Dado>();
 			try {
 				clients = Coleta.me.getClientList();
-				trieDatas = Coleta.me.getTrieDatas();
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -139,29 +170,56 @@ public class httpServer {
 				header += "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n";
 				header += "<head>\n";
 				header += "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n";
-				header += "<title>Página teste</title>\n";
+				header += "<title>HomeCare - UFPel</title>\n";
 				header += "</head>\n";
 				header += "<body>\n";
 				header += "<table>\n";
 				os.write(header.getBytes());
-				if( clients != null ) {
+				if (clients != null) {
 					for (Socket socket : clients) {
 						String ip = socket.getInetAddress().getHostAddress();
-						String body = "<tr>";
-						body += "<tr><td>Paciente</td><td>Nome</td></tr>";// nome do
-																			// paciente
-						body += "<tr><td>IP</td><td>" + ip + "</td></tr>";// ip do
-																			// paciente
-						if (trieDatas.containsKey(ip)) {
-							CopyOnWriteArrayList<Dado> dataColeta = trieDatas.get(ip);
-							for (Dado dado : dataColeta) {
-								body += "<tr><td>Dado</td><td>" + dado.getValor()
-										+ " " + dado.getUnidadeMedida()
-										+ "</td></tr>";// nome do paciente
+						String cpf = Coleta.me.getCpfFromIp(ip);
+						if (cpf != null) {
+							dados = (CopyOnWriteArrayList<Dado>) Coleta
+									.getLastDatasOfCpf(cpf);
+							String body = "<tr>";
+							body += "<tr><td>Paciente</td><td>Nome</td></tr>";// nome
+																				// do
+																				// paciente
+							body += "<tr><td>CPF</td><td>" + cpf + "</td></tr>";// cpf
+																				// do
+																				// paciente
+							if (dados != null) {
+								String tipo;
+								for (Dado dado : dados) {
+									tipo = dado.getTipo();
+									switch (Msg.valueOf(tipo)) {
+									case temp:
+										body += "<tr><td>Temperature</td><td>"
+												+ dado.getValor()
+												+ " ºC</td></tr>";
+										break;
+									case press:
+										body += "<tr><td>Pressure Systolic</td><td>"
+												+ dado.getValor()
+												+ " mmHg</td></tr>";
+										break;
+									case presd:
+										body += "<tr><td>Pressure Diastolic</td><td>"
+												+ dado.getValor()
+												+ " mmHg</td></tr>";
+										break;
+									case card:
+										body += "<tr><td>Pulse</td><td>"
+												+ dado.getValor()
+												+ "</td></tr>";
+										break;
+									}
+								}
 							}
+							body += "</tr><tr></tr>";
+							os.write(body.getBytes());
 						}
-						body += "</tr><tr></tr>";
-						os.write(body.getBytes());
 					}
 				}
 				String footer = "</table>\n";
