@@ -8,10 +8,14 @@ import java.awt.event.ActionListener;
 import java.awt.font.*;
 import java.awt.geom.*;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.TreeMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.*;
 
@@ -22,35 +26,39 @@ public class HomeCarePanel {
 	private static JPanel graph;
 	private static JSplitPane jSplitPane;
 	private static JFrame window;
-	JComboBox pacienteBox;
+	private JComboBox pacienteBox;
+	private Thread graphThread;
 
 	private Coleta coleta;
 	private TreeMap<String, Paciente> triePaciente = new TreeMap<String, Paciente>();
-	private List<Dado> dados = new ArrayList();
+	private CopyOnWriteArrayList<Dado> dados = new CopyOnWriteArrayList<Dado>();
 
-	private String cpf = "111.222.333-00";
+	private String cpfHomeCare;
+	private String cpfSelected;
+	private Paciente pac;
 
-	private double[] upDataCard = new double[20];
-	private double[] upDataTemp = new double[20];
-	private double[] upDataPress = new double[20];
-	private double[] upDataPress2 = new double[20];
+	private static double[] upDataCard = new double[20];
+	private static double[] upDataTemp = new double[20];
+	private static double[] upDataPress = new double[20];
+	private static double[] upDataPress2 = new double[20];
 
 	private enum Msg {
 		temp, press, presd, card;
 	}
 
 	public HomeCarePanel() throws IOException {
-		coleta = new Coleta("127.0.0.1");
-		Socket client = new Socket("127.0.0.1", 12345);
+		coleta = new Coleta("192.168.25.9");
+		Socket client = new Socket("192.168.25.155", 12345);
 		coleta.myServers.add(client);
 		new Thread(coleta).start();
 
+		this.cpfHomeCare = coleta.getHomeCare().getCpf();
+		this.cpfSelected = this.cpfHomeCare;
 		Paciente john = new Paciente(" Johnny Cash", "male", "26/02/1932",
-				"111.222.333-00","71");
-		Paciente june = new Paciente(" June Carter", "female", "23/06/1929",
-				"250.300.100-88","73");
-		this.triePaciente.put(cpf, john);
-		this.triePaciente.put("250.300.100-88", june);
+				"111.222.333-00", "71");
+
+		this.triePaciente.put(cpfHomeCare, coleta.getHomeCare().getPaciente());
+		this.triePaciente.put("111.222.333-00", john);
 
 		menu = new JPanel();
 		graph = new JPanel();
@@ -66,7 +74,7 @@ public class HomeCarePanel {
 		window.setVisible(true);
 		window.setLocationRelativeTo(null);
 		telaMenu();
-		telaGraph();
+		telaGraph(false);
 
 	}
 
@@ -75,104 +83,137 @@ public class HomeCarePanel {
 
 		pacienteBox = new JComboBox();
 		pacienteBox.addItem(" select the patient");
-		for(String str : this.triePaciente.keySet()){
+		for (String str : this.triePaciente.keySet()) {
 			pacienteBox.addItem(str);
 		}
 		menu.add(pacienteBox);
-		
-		
-		pacienteBox.addActionListener(  
-		   new ActionListener() {  
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						nomes();
-					}  
-		        }
-		   );
-		
+
+		pacienteBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				nomes();
+			}
+		});
+
 	}
 
-	private void nomes(){
+	private void nomes() {
 		String cpfCombo = (String) this.pacienteBox.getSelectedItem();
-		Paciente pac = this.triePaciente.get(cpfCombo);
+		if (!coleta.getTrieDatas().containsKey(cpfCombo)) {
+			JOptionPane.showMessageDialog(window,
+							"Sorry... this patient doesn't have access \n Check the connection!",
+							"Check the connection", JOptionPane.WARNING_MESSAGE);
+			pac = this.triePaciente.get(this.cpfHomeCare);
+			pacienteBox.setSelectedItem(this.cpfHomeCare);
+			pacienteBox.updateUI();
+		} else {
+			pac = this.triePaciente.get(cpfCombo);
+		}
 		menu.removeAll();
 		menu.add(pacienteBox);
 		menu.add(new JLabel(" Patient: " + pac.getNome()));
 		menu.add(new JLabel(" gender: " + pac.getGenero()));
 		menu.add(new JLabel(" age: " + pac.getIdade()));
 		menu.add(new JLabel(" birth date: " + pac.getDataNasc()));
-		if(cpfCombo.equals(cpf)){
-			menu.add(new JLabel(" HMC: local "));
-		} else{
-			menu.add(new JLabel(" HMC: distributed "));
+		if (cpfCombo.equals(cpfHomeCare)) {
+			menu.add(new JLabel(" HCM: local "));
+		} else {
+			menu.add(new JLabel(" HCM: distributed "));
 		}
+		this.cpfSelected = pac.getCpf();
+		telaGraph(true);
+		graph.updateUI();
 		menu.updateUI();
 	}
-	
-	private void telaGraph() {
-		GraphingData gpCard = new GraphingData("card");
-		gpCard.setBorder(BorderFactory.createTitledBorder("Heart Rate"));
 
-		GraphingData gpTemp = new GraphingData("temp");
-		gpTemp.setBorder(BorderFactory.createTitledBorder("Temperature"));
+	private void telaGraph(boolean update) {
 
-		GraphingData gpPress = new GraphingData("press");
-		gpPress.setBorder(BorderFactory.createTitledBorder("Blood Pressure"));
+		if (update) {
+			graph.removeAll();
+			graphThread = null;
+		}
+		TelaGraph telaGraph = new TelaGraph();
+		graphThread = new Thread(telaGraph, "telaGraph");
+		graphThread.start();
+		graph.updateUI();
+	}
 
-		graph.setLayout(new GridLayout(3, 0, 5, 5));
-		graph.add(gpCard);
-		graph.add(gpTemp);
-		graph.add(gpPress);
+	private class TelaGraph implements Runnable {
 
-		double[] dataCard = new double[20];
-		double[] dataTemp = new double[20];
+		public void run() {
+			GraphingData gpCard = new GraphingData("card");
+			gpCard.setBorder(BorderFactory.createTitledBorder("Heart Rate"));
 
-		double[] dataPress = new double[20];
-		double[] dataPress2 = new double[20];
-		// leitura dos dados
-		while (true) {
-			this.dados = Coleta.getLastDatasOfCpf(cpf);
-			separaDados();
+			GraphingData gpTemp = new GraphingData("temp");
+			gpTemp.setBorder(BorderFactory.createTitledBorder("Temperature"));
 
-			for (int i = 0; i < 20; i++) {
+			GraphingData gpPress = new GraphingData("press");
+			gpPress.setBorder(BorderFactory
+					.createTitledBorder("Blood Pressure"));
 
-				gpCard.setDatas(dataCard);
-				gpCard.updateUI();
+			graph.setLayout(new GridLayout(3, 0, 5, 5));
+			graph.add(gpCard);
+			graph.add(gpTemp);
+			graph.add(gpPress);
 
-				gpTemp.setDatas(dataTemp);
-				gpTemp.updateUI();
+			double[] dataCard = new double[20];
+			double[] dataTemp = new double[20];
 
-				gpPress.setDatas(dataPress, dataPress2);
-				gpPress.updateUI();
+			double[] dataPress = new double[20];
+			double[] dataPress2 = new double[20];
+			// leitura dos dados
+			Thread myThread = Thread.currentThread();
 
-				try {
-					Thread.sleep(1000);
-					for (int l = 0; l < i; l++) {
-						dataCard[20 - i + l] = upDataCard[l];
-						dataTemp[20 - i + l] = upDataTemp[l];
-
-						dataPress[20 - i + l] = upDataPress[l];
-						dataPress2[20 - i + l] = upDataPress2[l];
-					}
-
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+			while (myThread == graphThread) {
+				dados = (CopyOnWriteArrayList<Dado>) Coleta
+						.getLastDatasOfCpf(cpfSelected);
+				if (dados == null) {
+					return;
 				}
+				separaDados();
+
+				for (int i = 0; i < 20; i++) {
+
+					gpCard.setDatas(dataCard);
+					gpCard.updateUI();
+
+					gpTemp.setDatas(dataTemp);
+					gpTemp.updateUI();
+
+					gpPress.setDatas(dataPress, dataPress2);
+					gpPress.updateUI();
+
+					try {
+						Thread.sleep(1000);
+						for (int l = 0; l < i; l++) {
+							dataCard[20 - i + l] = upDataCard[l];
+							dataTemp[20 - i + l] = upDataTemp[l];
+							dataPress[20 - i + l] = upDataPress[l];
+							dataPress2[20 - i + l] = upDataPress2[l];
+						}
+
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+
+				dataCard = upDataCard;
+				dataTemp = upDataTemp;
+				dataPress = upDataPress;
+				dataPress2 = upDataPress2;
 			}
 
-			dataCard = upDataCard;
-			dataTemp = upDataTemp;
-			dataPress = upDataPress;
-			dataPress2 = upDataPress2;
-
 		}
-		// graph.updateUI();
 	}
 
 	private void separaDados() {
 		String tipo;
+
+		CopyOnWriteArrayList<Dado> listDados = new CopyOnWriteArrayList<Dado>(
+				dados);
+
 		int contTemp = 0, contPress = 0, contPress2 = 0, contCard = 0;
-		for (Dado dado : this.dados) {
+		for (Dado dado : listDados) {
 			tipo = dado.getTipo();
 			switch (Msg.valueOf(tipo)) {
 			case temp:
@@ -193,7 +234,7 @@ public class HomeCarePanel {
 				break;
 			}
 		}
-		this.dados.clear();
+		// this.dados.clear();
 	}
 
 	private class GraphingData extends JPanel {
@@ -214,7 +255,7 @@ public class HomeCarePanel {
 			if (tipo.equals("temp")) {
 				this.cor = Color.blue.darker();
 				label = "Temperature current: ";
-				this.med = 43;
+				this.med = 60;
 			}
 			if (tipo.equals("press")) {
 				this.cor2 = Color.green.darker();

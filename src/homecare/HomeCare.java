@@ -2,23 +2,36 @@ package homecare;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class HomeCare {
 
 	private Paciente paciente;
 	
-	private ArrayList<Sensor> sensores = new ArrayList<Sensor>();
-	private ArrayList<Dado> dadosLidos = new ArrayList<Dado>();
+	private Sensor sensor;
+	private CopyOnWriteArrayList<Dado> dadosLidos = new CopyOnWriteArrayList<Dado>();
+	private double[] temp, sist, dias, pulse;
 	
 	public HomeCare (){
-		paciente = new Paciente(" Johnny Cash", "male", "26/02/1932", "111.222.333-00","71");
+		paciente = new Paciente(" June Carter", "female", "23/06/1929",
+				"250.300.100-88","73");
+		temp = new double[20];
+		sist = new double[20];
+		dias = new double[20];
+		pulse = new double[20];
+		sensor = new Sensor();
+		new Thread(sensor).start();
 	}
 	
 	public String getCpf(){
 		return paciente.getCpf();
 	}
 	
-	public ArrayList<Dado> getDados(){
+	public Paciente getPaciente(){
+		return this.paciente;
+	}
+	
+	public CopyOnWriteArrayList<Dado> getDados(){
 		if(!dadosLidos.isEmpty()){
 			dadosLidos.clear();
 		}
@@ -27,24 +40,35 @@ public class HomeCare {
 	}
 	
 	private void lerSensores(){
-		Random rad = new Random();
+		try {
+			Thread.sleep(1000000000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		temp = sensor.getTemperatura();
+		sist = sensor.getSistolica();
+		dias = sensor.getDiastolica();
+		pulse = sensor.getPulso();
 		for(int i = 0; i < 20; i++){
-			dadosLidos.add(new Dado(35.5 + rad.nextDouble() * 2,"temp"));
-			dadosLidos.add(new Dado(13.45 +  rad.nextDouble() * 2,"press"));
-			dadosLidos.add(new Dado(5.1 + rad.nextDouble() * 3,"presd"));
-			dadosLidos.add(new Dado(66.75 + rad.nextDouble() * 10,"card"));
+			dadosLidos.add(new Dado(temp[i],"temp"));
+			dadosLidos.add(new Dado(sist[i],"press"));
+			dadosLidos.add(new Dado(dias[i],"presd"));
+			dadosLidos.add(new Dado(pulse[i],"card"));
 		}
 	}
 	
-	/*
-	 * gerencia os sensores add
-	 * ler um arquivo de configuração dos sensores
-	 * a serem utilizados
-	 */
-	private void addSensores(){
-		Sensor temp = new Temperatura();
-		sensores.add(temp);
+	private void lerSensoresRandom(){
+		Random rad = new Random();
+		for(int i = 0; i < 20; i++){
+			dadosLidos.add(new Dado(10.5 + rad.nextDouble() * 2,"temp"));
+			dadosLidos.add(new Dado(12.5 +  rad.nextDouble() * 2,"press"));
+			dadosLidos.add(new Dado(6.7 + rad.nextDouble() * 3,"presd"));
+			dadosLidos.add(new Dado(80.20 + rad.nextDouble() * 10,"card"));
+		}
 	}
+	
+	
 	
 	
 

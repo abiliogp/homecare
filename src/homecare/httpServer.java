@@ -2,6 +2,7 @@ package homecare;
 
 import java.util.ArrayList;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -124,7 +125,7 @@ public class httpServer {
 	static class HandlerHttp implements HttpHandler {
 		public void handle(HttpExchange t) throws IOException {
 			ArrayList<Socket> clients = null;
-			TreeMap<String, ArrayList<Dado>> trieDatas = null;
+			TreeMap<String,CopyOnWriteArrayList<Dado>> trieDatas = null;
 			try {
 				clients = Coleta.me.getClientList();
 				trieDatas = Coleta.me.getTrieDatas();
@@ -152,7 +153,7 @@ public class httpServer {
 						body += "<tr><td>IP</td><td>" + ip + "</td></tr>";// ip do
 																			// paciente
 						if (trieDatas.containsKey(ip)) {
-							ArrayList<Dado> dataColeta = trieDatas.get(ip);
+							CopyOnWriteArrayList<Dado> dataColeta = trieDatas.get(ip);
 							for (Dado dado : dataColeta) {
 								body += "<tr><td>Dado</td><td>" + dado.getValor()
 										+ " " + dado.getUnidadeMedida()

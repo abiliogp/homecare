@@ -25,15 +25,16 @@ import java.util.Scanner;
 import java.util.TreeMap;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Coleta implements Runnable{
+public class Coleta implements Runnable {
 
 	private HomeCare myHomeCare;
 	private String pacienteCpf;
 	private ArrayList<Socket> myClients;
 	ArrayList<Socket> myServers;
 
-	private int defaultPort = 12344;
+	private int defaultPort = 12345;
 	private String myIp;
 
 	private ServerSocket server;
@@ -41,12 +42,14 @@ public class Coleta implements Runnable{
 	private int counter = 1;
 	private Thread senderThread, receiverThread;
 
-	private static TreeMap<String, ArrayList<Dado>> trieDatas;
+	private static TreeMap<String, CopyOnWriteArrayList<Dado>> trieDatas;
+
 	private TreeMap<String, String> trieIpCpf;
+	private static CopyOnWriteArrayList<Dado> subList = new CopyOnWriteArrayList<Dado>();
 
 	public static Coleta me;
 
-	private enum Msg {
+	private static enum Msg {
 		cser, csmy, temp, press, presd, card, ip, end;
 	}
 
@@ -57,31 +60,39 @@ public class Coleta implements Runnable{
 		server = new ServerSocket(defaultPort);
 		myClients = new ArrayList<Socket>();
 		myServers = new ArrayList<Socket>();
-		trieDatas = new TreeMap<String, ArrayList<Dado>>();
+		trieDatas = new TreeMap<String, CopyOnWriteArrayList<Dado>>();
 		trieIpCpf = new TreeMap<String, String>();
-		this.trieDatas.put(pacienteCpf, new ArrayList<Dado>());
-		
+		this.trieDatas.put(pacienteCpf, new CopyOnWriteArrayList<Dado>());
 	}
 
-	public void getDadosHomeCare() {
-
+	public HomeCare getHomeCare() {
+		return this.myHomeCare;
 	}
 
 	public ArrayList<Socket> getClientList() {
 		return myClients;
 	}
 
-	public TreeMap<String, ArrayList<Dado>> getTrieDatas() {
+	public TreeMap<String, CopyOnWriteArrayList<Dado>> getTrieDatas() {
 		return trieDatas;
 	}
 
-	public static List<Dado> getLastDatasOfCpf(String cpf){
-		int size = trieDatas.get(cpf).size();
-		List<Dado> subList = new ArrayList();
-		subList = trieDatas.get(cpf).subList(size-80, size);
-		return subList ;
+	public static CopyOnWriteArrayList<Dado> getLastDatasOfCpf(String cpf) {
+		if (trieDatas.get(cpf) != null) {
+			int size = trieDatas.get(cpf).size();
+			if(!subList.isEmpty()){
+				subList.clear();
+			}
+			if (size > 80) {
+				for (int i = size - 80; i < size; i++) {
+					subList.add(trieDatas.get(cpf).get(i));
+				}
+			}
+		}
+
+		return subList;
 	}
-	
+
 	public void run() {
 		receiverUpdate();
 		senderUpdate();
@@ -167,9 +178,7 @@ public class Coleta implements Runnable{
 			Thread myThread = Thread.currentThread();
 			while (myThread == receiverThread) {
 				try {
-
 					receiverBroadcast();
-
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -207,7 +216,8 @@ public class Coleta implements Runnable{
 				cpf = manipulate(str, "cpf", "<", ">");
 				st = manipulate(str, "st", ":", "<");
 				System.out.println(str);
-				if (st == null || Msg.valueOf(st) == null) {
+
+				if (st == null || st.isEmpty() || Msg.valueOf(st) == null) {
 					break;
 				}
 				switch (Msg.valueOf(st)) {
@@ -259,15 +269,15 @@ public class Coleta implements Runnable{
 	 * salvar dados
 	 */
 	private void saveData(String cpf, String st, double data, String time) {
-		ArrayList<Dado> dataColeta;
+		CopyOnWriteArrayList<Dado> dataColeta;
 		if (!trieDatas.containsKey(cpf)) {
-			dataColeta = new ArrayList<Dado>();
-			dataColeta.add(new Dado(data, st ,time));
+			dataColeta = new CopyOnWriteArrayList<Dado>();
+			dataColeta.add(new Dado(data, st, time));
 			trieDatas.put(cpf, dataColeta);
 		} else {
 			dataColeta = trieDatas.get(cpf);
-			dataColeta.add(new Dado(data, st ,time));
-			if (dataColeta.size() > 1000) {
+			dataColeta.add(new Dado(data, st, time));
+			if (dataColeta.size() > 100000) {
 				System.out.println("Save to file " + dataColeta.size());
 				saveToFile();
 				dataColeta.clear();
@@ -305,18 +315,17 @@ public class Coleta implements Runnable{
 	 * envia dados para os clientes e salva os próprios dados
 	 */
 	private void senderDatas() throws IOException {
-		ArrayList<Dado> cpfDatas;
-		ArrayList<Dado> myDatas = this.myHomeCare.getDados();
+		CopyOnWriteArrayList<Dado> cpfDatas;
+		CopyOnWriteArrayList<Dado> myDatas = this.myHomeCare.getDados();
 		cpfDatas = this.trieDatas.get(this.pacienteCpf);
 		cpfDatas.addAll(myDatas);
-		System.err.println("size trie " + cpfDatas.size());
 		for (Socket coleta : this.myClients) {
 			PrintStream ps = new PrintStream(coleta.getOutputStream());
 			for (int i = 0; i < myDatas.size(); i++) {
 				ps.println("cpf<" + this.pacienteCpf + ">st:"
 						+ myDatas.get(i).getTipo() + "<"
-						+ myDatas.get(i).getValor() + ">" 
-						+ "time<" + myDatas.get(i).getTime() + ">");
+						+ myDatas.get(i).getValor() + ">" + "time<"
+						+ myDatas.get(i).getTime() + ">");
 			}
 			ps.println("cpf<" + this.pacienteCpf + ">st:end<");
 		}
@@ -373,7 +382,7 @@ public class Coleta implements Runnable{
 
 		me = coleta;
 
-		//coleta.runServer();
+		// coleta.runServer();
 	}
 
 }
