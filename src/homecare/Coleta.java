@@ -50,6 +50,7 @@ public class Coleta implements Runnable {
 	private static CopyOnWriteArrayList<Dado> subList = new CopyOnWriteArrayList<Dado>();
 
 	public static Coleta me;
+	private boolean iamtheServer;
 
 	private static enum Msg {
 		cser, csmy, temp, press, presd, card, ip, end;
@@ -65,6 +66,22 @@ public class Coleta implements Runnable {
 		trieDatas = new TreeMap<String, CopyOnWriteArrayList<Dado>>();
 		trieIpCpf = new TreeMap<String, String>();
 		webServer = new httpServer();
+		iamtheServer = true;
+		try {
+			if (InetAddress.getByName("homecare.sytes.net").isReachable(2000)) {
+				iamtheServer = false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (iamtheServer) {
+			try {
+				webServer.atualizaNoIP();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		me = this;
 		this.trieDatas.put(pacienteCpf, new CopyOnWriteArrayList<Dado>());
 	}
