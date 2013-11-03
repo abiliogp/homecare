@@ -1,4 +1,3 @@
-package homecare;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -40,16 +39,14 @@ public class HomeCare {
 	}
 	
 	private void lerSensores(){
-		try {
-			Thread.sleep(1000000000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		
+		while(!sensor.isDisponivel()){
 		}
 		temp = sensor.getTemperatura();
 		sist = sensor.getSistolica();
 		dias = sensor.getDiastolica();
 		pulse = sensor.getPulso();
+		
 		for(int i = 0; i < 20; i++){
 			dadosLidos.add(new Dado(temp[i],"temp"));
 			dadosLidos.add(new Dado(sist[i],"press"));

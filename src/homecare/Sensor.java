@@ -1,5 +1,3 @@
-package homecare;
-
 
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
@@ -17,7 +15,9 @@ public class Sensor implements SerialPortEventListener, Runnable {
 	private double[] sistolica;
 	private double[] diastolica;
 	private double[] pulso;
+	private boolean disponivel = false;
 
+	
 	SerialPort serialPort;
 	/** The port we're normally going to use. */
 
@@ -92,32 +92,62 @@ public class Sensor implements SerialPortEventListener, Runnable {
 			try {
 				String inputLine = null;
 				String str, value;
+				double data = 0;
+				int t = 0, s = 0 , d = 0 , p = 0;
 				if (input.ready()) {
-					for(int i = 0; i < 20; i++){
-						inputLine = input.readLine();
-						str = manipulate(inputLine, "st", ":", "<");
-						if (str.equals("t")) {
-							value = manipulate(inputLine, "t", "<", ">");
-							this.temperaturas[i] = Double.parseDouble(value);
-						} else if (str.equals("s")) {
-							value = manipulate(inputLine, "s", "<", ">");
-							this.sistolica[i] = Double.parseDouble(value);
-							this.sistolica[i] = this.sistolica[i]/10; 
-						} else if (str.equals("d")) {
-							value = manipulate(inputLine, "d", "<", ">");
-							this.diastolica[i] = Double.parseDouble(value);
-							this.diastolica[i] = this.diastolica[i]/10;
-						} else if (str.equals("p")) {
-							value = manipulate(inputLine, "p", "<", ">");
-							this.pulso[i] = Double.parseDouble(value);
+					for(int i = 0; i < 80; i++){
+					inputLine = input.readLine();
+					str = manipulate(inputLine, "st", ":", "<");
+					if (str.equals("t")) {
+						value = manipulate(inputLine, "t", "<", ">");
+						data = Double.parseDouble(value);
+						if(data != 0){
+							if(t < 20){
+								this.temperaturas[t] = data;
+								t++;
+							}
+						}
+					} else if (str.equals("s")) {
+						value = manipulate(inputLine, "s", "<", ">");
+						data = Double.parseDouble(value);
+						if(data != 0){
+							if(s < 20){
+								this.sistolica[s] = data/10;
+								s++;
+							}
+						} 
+					} else if (str.equals("d")) {
+						value = manipulate(inputLine, "d", "<", ">");
+						data = Double.parseDouble(value);
+						if(data != 0){
+							if(d < 20){
+								this.diastolica[d] = data/10;
+								d++;
+							}
+						}
+					} else if (str.equals("p")) {
+						value = manipulate(inputLine, "p", "<", ">");
+						data = Double.parseDouble(value);
+						if(data != 0){
+							if(p < 20){
+								this.pulso[p] = data;
+								p++;
+							}
 						}
 					}
+					System.out.println("parou no " + i);
+					}
+					this.disponivel = true;
 				}
 
 			} catch (Exception e) {
 				System.err.println(e.toString());
 			}
 		}
+	}
+	
+	public boolean isDisponivel(){
+		return this.disponivel;
 	}
 
 	public double[] getTemperatura() {
@@ -154,9 +184,10 @@ public class Sensor implements SerialPortEventListener, Runnable {
 		System.out.println("Started");
 	}
 
-	@Override
+	
 	public void run() {
 		this.initialize();
+		
 		Thread t = new Thread() {
 			public void run() {
 				// the following line will keep this app alive for 1000 seconds,
